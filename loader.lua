@@ -73,6 +73,32 @@ frame.BackgroundTransparency = 1 -- для появления
 frame.BorderSizePixel = 0
 frame.Parent = gui
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 16)
+--==================================================================
+-- ❄️ БРЕНДИНГ "Frozen" в углу
+--==================================================================
+local brand = Instance.new("TextLabel")
+brand.Name = "Brand"
+brand.Size = UDim2.new(0, 110, 0, 24)
+brand.Position = UDim2.new(1, -118, 0, 8)   -- правый верхний угол
+brand.AnchorPoint = Vector2.new(0, 0)
+brand.BackgroundTransparency = 1
+brand.Text = "❄️ Frozen"
+brand.TextColor3 = Color3.fromRGB(140, 210, 255)
+brand.TextXAlignment = Enum.TextXAlignment.Right
+brand.Font = Enum.Font.GothamBold
+brand.TextSize = 16
+brand.TextTransparency = 1   -- появится вместе с панелью
+brand.Parent = frame
+
+-- лёгкое мерцание снежинки
+task.spawn(function()
+    while brand and brand.Parent do
+        TweenService:Create(brand, TweenInfo.new(1), {TextColor3 = Color3.fromRGB(200, 240, 255)}):Play()
+        task.wait(1)
+        TweenService:Create(brand, TweenInfo.new(1), {TextColor3 = Color3.fromRGB(120, 190, 255)}):Play()
+        task.wait(1)
+    end
+end)
 
 -- голубой градиент фона
 local grad = Instance.new("UIGradient", frame)
@@ -157,15 +183,41 @@ local getBtn  = makeButton("🔗 Получить доступ", 130, Color3.fro
 local authBtn = makeButton("✅ Авторизоваться", 184, Color3.fromRGB(30, 140, 220))
 
 --==================================================================
--- ✨ АНИМАЦИЯ ПОЯВЛЕНИЯ
-frame.Size = UDim2.new(0, 380, 0, 0)
-local appear = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 380, 0, 250),
-    BackgroundTransparency = 0,
-})
-appear:Play()
-appear.Completed:Connect(function()
-    for _, obj in ipairs({title, sub, status, stroke}) do
+-- ✨ АНИМАЦИЯ ПОЯВЛЕНИЯ (плавное расширение из точки)
+--==================================================================
+-- стартовое состояние: крошечная панель в центре
+frame.Size = UDim2.new(0, 0, 0, 0)
+frame.BackgroundTransparency = 1
+
+-- этап 1: расширение по ширине (тонкая полоска)
+local expandWidth = TweenService:Create(
+    frame,
+    TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+    {
+        Size = UDim2.new(0, 380, 0, 4),
+        BackgroundTransparency = 0,
+    }
+)
+
+-- этап 2: раскрытие по высоте (с лёгким bounce)
+local expandHeight = TweenService:Create(
+    frame,
+    TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+    {
+        Size = UDim2.new(0, 380, 0, 250),
+    }
+)
+
+playSound(Settings.SoundClick)
+
+expandWidth:Play()
+expandWidth.Completed:Connect(function()
+    expandHeight:Play()
+end)
+
+-- содержимое появляется только после полного раскрытия
+expandHeight.Completed:Connect(function()
+    for _, obj in ipairs({title, sub, status, stroke, brand}) do
         local prop = obj:IsA("UIStroke") and {Transparency = 0} or {TextTransparency = 0}
         TweenService:Create(obj, TweenInfo.new(0.4), prop):Play()
     end
@@ -173,19 +225,6 @@ appear.Completed:Connect(function()
         TweenService:Create(b, TweenInfo.new(0.4), {BackgroundTransparency = 0, TextTransparency = 0}):Play()
     end
 end)
-playSound(Settings.SoundClick)
-
--- пульсация рамки (свечение)
-task.spawn(function()
-    while frame and frame.Parent do
-        TweenService:Create(stroke, TweenInfo.new(1.2), {Color = Color3.fromRGB(120, 200, 255)}):Play()
-        task.wait(1.2)
-        TweenService:Create(stroke, TweenInfo.new(1.2), {Color = Color3.fromRGB(50, 120, 220)}):Play()
-        task.wait(1.2)
-    end
-end)
-
---==================================================================
 -- 🎮 ЛОГИКА
 getBtn.MouseButton1Click:Connect(function()
     playSound(Settings.SoundClick)
